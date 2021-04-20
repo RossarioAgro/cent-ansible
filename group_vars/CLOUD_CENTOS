@@ -1,0 +1,4 @@
+
+---
+ansible_user                 : lenar 
+ansible_ssh_private_key_file : /home/lenar/.ssh/id_rsa

@@ -1,0 +1,37 @@
+---
+- hosts: cloudvm
+  user: ansible
+  become: yes
+  tasks:
+    - name: "Installing Docker pre packages"
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+         - yum-utils
+         - device-mapper-persistent-data
+         - lvm2
+    - name: "Configuring docker-ce repo"
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+    - name: " Installing Docker latest version"
+      yum:
+        name: docker-ce
+        state: present
+    - name: " Starting and Enabling Docker service"
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    - name: "Installing docker-compose"
+      get_url:
+         url: https://github.com/docker/compose/releases/download/1.29.0/docker-compose-linux-x86_64
+         dest: /usr/local/bin/docker-compose
+         mode: 'u+x,g+x,a+x'
+    - name: "Add leader nodes swarm"
+      docker_swarm:
+        state: present
+      vars:
+        ansible_python_interpreter: /usr/bin/python3

@@ -1,0 +1,10 @@
+- name: Run using a project directory
+  hosts: cloudvm
+  tasks:
+    - name: Up compose services
+      docker_compose:
+        project_src: /opt/zabbix-lab
+        files:
+        - docker-compose.yml
+      vars:
+        ansible_python_interpreter: /usr/bin/python3

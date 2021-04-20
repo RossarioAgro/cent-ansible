@@ -1,0 +1,72 @@
+version: "3"
+
+volumes:
+  db_data:
+    driver: local
+
+services:
+  zabbix-server:
+    hostname: zabbix-server
+    restart: unless-stopped
+    image: zabbix/zabbix-server-pgsql:alpine-${ZABBIX_VERSION}
+    environment:
+      - DB_SERVER_PORT=5432
+      - DB_SERVER_HOST=postgresql
+      - POSTGRES_DB=test
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+    volumes:
+      - ./zabbix/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
+    depends_on:
+      - postgresql
+
+  zabbix-frontend:
+    hostname: zabbix-frontend
+    restart: unless-stopped
+    image: zabbix/zabbix-web-apache-pgsql:alpine-${ZABBIX_VERSION}
+    environment:
+      - DB_SERVER_PORT=5432
+      - DB_SERVER_HOST=postgresql
+      - POSTGRES_DB=test
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - PHP_TZ=Europe/Moscow
+      - ZBX_SERVER_NAME=zabbix-server
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./zabbix/etc/ssl/apache2:/etc/ssl/apache2:ro
+    depends_on:
+      - postgresql
+      - zabbix-server
+    ports:
+      - "80:8080"
+  postgresql:
+    hostname: postgresql
+    restart: unless-stopped
+    image: postgres:${POSTGRES_VERSION}-alpine
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    command: ["postgres", "-c", "max_connections=1000"]
+
+  zabbix-agent:
+    hostname: zabbix-agent
+    restart: unless-stopped
+    image: zabbix/zabbix-agent:alpine-${ZABBIX_VERSION}
+    environment:
+      - ZBX_HOSTNAME=zabbix-agent
+      - ZBX_DEBUGLEVEL=4
+      - ZBX_ENABLEREMOTECOMMANDS=1
+      - ZBX_SERVER_HOST=zabbix-server
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./zabbix/etc/zabbix/zabbix_agentd.d:/etc/zabbix/zabbix_agentd.d:ro
+      - ./zabbix/frontend_hacks:/usr/share/zabbix/local/
+    depends_on:
+      - zabbix-server
+
