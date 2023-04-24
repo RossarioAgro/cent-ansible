@@ -1,1 +1,2 @@
 Test string for Alina study
+Second string for Alina lesson, abbout pull.
